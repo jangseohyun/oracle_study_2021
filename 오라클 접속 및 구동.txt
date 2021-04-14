@@ -1,0 +1,243 @@
+■■■ 오라클 접속 및 구동 ■■■
+
+
+실행창 호출 (윈도우키 + r) > cmd 입력 
+
+(명령프롬프트 상태에서...)
+
+--○ 접속된 사용자 없이 단순히 SQL 프롬프트만 띄우도록 한 것
+C:\>sqlplus/nolog
+//--==>> 
+/*
+SQL*Plus: Release 11.2.0.2.0 Production on 화 3월 23 14:26:41 2021
+Copyright (c) 1982, 2014, Oracle.  All rights reserved.
+SQL>
+*/
+
+
+--※ 『 sqlplus 』 는 SQL을 수행하기 위해 ORACLE에서 제공하는
+--   도구 (툴, 유틸리티) 이다.
+
+--※ 『 C:\oraclexe\app\oracle\product\11.2.0\server\bin 』
+--   에 존재하는 『 sqlplus.exe 』
+--   이미 이 경로가 환경변수 path 에 등록되어 있으므로
+--   해당 경로까지 찾아들어가지 않아도
+--   『 C:\>sqlplus 』 와 같은 형식으로
+--   명령어 사용이 가능한 상태인 것이다.
+
+SQL> dir
+--==>> SP2-0042: unknown command "dir" - rest of line ignored.
+
+SQL> ipconfig
+--==>> SP2-0042: unknown command "ipconfig" - rest of line ignored.
+	
+
+--※ 이제는 일반적인 도스 명령어(윈도우 명령어)를 실행할 수 없다.
+--   ( 수행할 수 있는 상태가 아니다. )
+
+
+--○ 현재 접속한 사용자 계정을 조회하는 구문
+SQL> show user
+--==>> USER is ""
+nolog = 사용자가 없다
+
+--○ 첫 번째 관리자 계정인 『 sys 』 로 연결해 본다.
+Windows → Administrator
+MS-SQL  → SA
+ORACLE  → SYS	SYSTEM (→ SYS의 조수)
+
+C:\>sqlplus sys/java006$ as sysdba
+--==>>
+/*
+SQL*Plus: Release 11.2.0.2.0 Production on 화 3월 23 15:12:10 2021
+Copyright (c) 1982, 2014, Oracle.  All rights reserved.
+Connected to:
+Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+SQL>
+*/
+
+
+--○ 현재 접속한 사용자 계정 조회
+/*
+SQL> show user
+USER is "SYS"
+*/
+
+
+--※ 현재 우리는 sys 계정을 통해
+--   오라클 최고 관리자 권한을 가진 상태에서
+--   오라클 서버에 접속한 상태이다.
+
+
+
+--○ 오라클 서버 인스턴스 상태 조회 (사용가능상태 여부확인)
+--    전원의 on/off 여부 등 일반적으로 접속의 가능 여부를
+--    확인 할 때 사용하는 명령
+
+SQL> select status from v$instance;
+--==>>
+/*
+STATUS
+------------------------
+OPEN
+*/
+--> 오라클 서버가 정상적으로 startup 되었음을 의미. (=open)
+
+
+--○ 두 번째로... 일반 사용자 계정인 『 hr 』 로 연결을 시도
+SQL> connect hr/lion
+--==>>
+/*
+ERROR:
+ORA-28000: the account is locked
+
+Warning: You are no longer connected to ORACLE
+*/
+--> 일반 사용자 계정인 『 hr 』은 잠겨있는 상태이므로
+--   오라클 서버 접속이 불가능한 상태
+
+
+--○ hr 계정의 잠금을 해제하기 위해 sys 로 연결
+SQL> conn sys/java006$ as sysdba
+--==>>Connected.
+
+
+--○ 접속된 사용자 계정 확인
+SQL> show user
+--==>> USER is "SYS"
+
+
+--○ 오라클 사용자 계정들의 상태 조회 (확인) → sys 인 상태에서...
+SQL> set linesize 500
+SQL> select username, account_status from dba_users;
+--==>>
+/*
+
+USERNAME                                                     ACCOUNT_STATUS
+------------------------------------------------------------ ----------------------------------------------------------------
+SYS                                                          OPEN
+SYSTEM                                                       OPEN
+ANONYMOUS                                                    OPEN
+APEX_PUBLIC_USER                                             LOCKED
+FLOWS_FILES                                                  LOCKED
+APEX_040000                                                  LOCKED
+OUTLN                                                        EXPIRED & LOCKED
+DIP                                                          EXPIRED & LOCKED
+ORACLE_OCM                                                   EXPIRED & LOCKED
+XS$NULL                                                      EXPIRED & LOCKED
+MDSYS                                                        EXPIRED & LOCKED
+
+USERNAME                                                     ACCOUNT_STATUS
+------------------------------------------------------------ ----------------------------------------------------------------
+CTXSYS                                                       EXPIRED & LOCKED
+DBSNMP                                                       EXPIRED & LOCKED
+XDB                                                          EXPIRED & LOCKED
+APPQOSSYS                                                    EXPIRED & LOCKED
+HR                                                           EXPIRED & LOCKED
+
+16 rows selected.
+*/
+
+
+--○ 계정 잠금 / 해제 → 현재 sys 로 연결된 상태...
+변경
+구조적 변경	 alter
+내용(값) 변경	 update
+
+SQL> alter user hr account unlock;
+--==>> User altered.
+
+
+--○ 오라클 사용자 계정들의 상태 조회 (확인) → sys 인 상태에서...
+SQL> select username, account_status from dba_users;
+--==>>
+/*
+
+USERNAME                                                     ACCOUNT_STATUS
+------------------------------------------------------------ ----------------------------------------------------------------
+SYS                                                          OPEN
+SYSTEM                                                       OPEN
+ANONYMOUS                                                    OPEN
+HR                                                           EXPIRED
+APEX_PUBLIC_USER                                             LOCKED
+FLOWS_FILES                                                  LOCKED
+APEX_040000                                                  LOCKED
+OUTLN                                                        EXPIRED & LOCKED
+DIP                                                          EXPIRED & LOCKED
+ORACLE_OCM                                                   EXPIRED & LOCKED
+XS$NULL                                                      EXPIRED & LOCKED
+
+USERNAME                                                     ACCOUNT_STATUS
+------------------------------------------------------------ ----------------------------------------------------------------
+MDSYS                                                        EXPIRED & LOCKED
+CTXSYS                                                       EXPIRED & LOCKED
+DBSNMP                                                       EXPIRED & LOCKED
+XDB                                                          EXPIRED & LOCKED
+APPQOSSYS                                                    EXPIRED & LOCKED
+
+16 rows selected.
+*/
+==>다시 조회한 결과 hr계정의 상태는 EXPIRED 이며,
+---       잠금은 해제한 상황이지만 패스워드에 대한 유효기간이 만료된 상황이므로
+--        이를 재설정 해야한다.
+
+
+
+--○ 계정 정보 변경 (패스워드 설정 변경) → sys 로 접속된 상태
+ alter user hr identified by lion;
+//--==>> User altered
+
+
+--○ 다시 hr 계정으로 오라클 접속 시도
+SQL> conn hr/lion
+Connected.
+
+--○ 접속된 사용자 계정 확인
+SQL> show user
+USER is "HR
+
+--○ 현재 오라클 서버의 사용자 계정 상태에 대한 정보 조회
+SQL>  select username, account_status from dba_users;
+--==>>
+/*
+ select username, account_status from dba_users
+                                      *
+ERROR at line 1:
+ORA-00942: table or view does not exist
+*/
+--> 『 hr 』 이라는 일반 사용자 계정을 통해서는
+--  『 dba_users 』 의 조회가 불가능한 상황임을 확인
+
+
+--○ host 명령어
+--   도스 명령 체계로 전환하거나
+--   라인 단위에서 도스 명령어 입력이 가능하다.
+--   예를들면 host dir, host cls, host ipconfig 등...
+--   유닉스 계열에서는 『 host 』명령어 뿐 아니라 『 ! 』 도 사용이 가능하다.
+--   하지만, 윈도우 계열에서는 『 host 』 명령어만 사용이 가능하다
+--   host 상태에서 빠져나갈 경우는 『 exit 』 명령을 입력한다.
+
+SQL > host ipconfig 
+이렇게도 가능
+
+
+-- ※ Administrator (윈도우 관리자 계정) 가 ORA_DBA 라는 그룹에 포함되어 있을 경우
+--    취약한 보안 정책으로 인해 실무에서는
+--    특별한 경우가 아니고서는 제외시키고 사용해야 한다.
+--==>> ORA_DBA 그룹에서 윈도우 관리자 계정 제거~!!!
+
+-- (Windows 10 Pro)
+-- 탐색기 > 내컴퓨터 → 마우스 우클릭 > 관리 > 로컬 사용자 및 그룹 ...
+
+-- (Windows 10 Home A)
+-- 윈도우키+r (실행창호출) → lusrmgr.msc
+
+-- (Windows 10 Home B)
+-- 윈도우키+r (실행창호출) → control userpasswords2
+
+
+--※ 제거 이후 sys 의 계정 및 패스워드가 일치하지 않으면
+--   오라클 서버에 접속할 수 없는 상태가 된다.
+
+
+
